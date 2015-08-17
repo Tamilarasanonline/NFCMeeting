@@ -1,6 +1,7 @@
 package com.bosch.iot.tapnbook;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
@@ -24,16 +25,20 @@ import java.util.Calendar;
 public class HomeActivity extends Activity {
 
     // Widgets
-    private Button btOk;
-    private TextView roomName;
-    private TextView bookingTime;
-    private Resources room;
+    public Button btOk;
+    public TextView roomName;
+    public TextView bookingTime;
+    public Resources room;
+    private GoogleService service;
+    private Calendar to;
+    private Calendar from;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        service = new GoogleService(this);
         setContentView(R.layout.activity_home);
-        Toast.makeText(this, "" + getCurrentTimeText(), Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "" + HomeActivity.class.getResourceAsStream(""), Toast.LENGTH_LONG).show();
         initializeWidgets();
     }
 
@@ -56,6 +61,8 @@ public class HomeActivity extends Activity {
     protected void onResume() {
         super.onResume();
         room = null;
+        from = null;
+        to = null;
         NdefMessage msgs[] = null;
         if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(getIntent().getAction())) {
             Parcelable[] rawMsgs = getIntent().getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
@@ -109,18 +116,19 @@ public class HomeActivity extends Activity {
             NdefRecord[] records = msgs[0].getRecords();
             if (records.length == 1) {
                 room = getResourceName(new String(records[0].getPayload(), Charset.forName("UTF-8")));
-                Toast.makeText(this, "" + room.toString(), Toast.LENGTH_LONG).show();
+//                Toast.makeText(this, "" + room.toString(), Toast.LENGTH_LONG).show();
             }
         }
         prepareValues();
     }
 
     private void prepareValues() {
-        Toast.makeText(this, "" + room.toString(), Toast.LENGTH_LONG).show();
         if (room != null) {
-            roomName.setText(room.toString());
-            bookingTime.setText(getCurrentTimeText());
-            btOk.setEnabled(true);
+            prepareCurrentDateTime();
+            if (from != null && to != null) {
+                Toast.makeText(this, "Dates Not Null" , Toast.LENGTH_SHORT).show();
+                service.IsRoomAvailable();
+            }
         } else {
             roomName.setText("Invalid NFC Tag  :(");
             bookingTime.setText("(((((O)))))");
@@ -129,11 +137,33 @@ public class HomeActivity extends Activity {
         }
     }
 
+    public void updateBookingValue(boolean flag) {
+        if (flag) {
+            roomName.setText(room.toString());
+            bookingTime.setText(getCurrentTimeText());
+            btOk.setEnabled(true);
+            btOk.setBackgroundColor(Color.GREEN);
+        } else {
+            roomName.setText(room.toString() + " Not Available");
+            bookingTime.setText(getCurrentTimeText());
+            btOk.setBackgroundColor(Color.RED);
+            btOk.setEnabled(false);
+        }
+    }
+
+    public void printErrorMessage(String  msg){
+        roomName.setText(msg);
+    }
+
+    private void prepareCurrentDateTime(){
+        to = Calendar.getInstance();
+        from = Calendar.getInstance();
+        to.add(Calendar.HOUR, 1);
+        Toast.makeText(this, "" + from + to, Toast.LENGTH_SHORT).show();
+    }
+
     private String getCurrentTimeText() {
         SimpleDateFormat sdf = new SimpleDateFormat("H:mm a", new DateFormatSymbols());
-        Calendar to = Calendar.getInstance();
-        Calendar from = Calendar.getInstance();
-        to.add(Calendar.HOUR, 1);
         return sdf.format(from.getTime()) + " To " + sdf.format(to.getTime());
     }
 
