@@ -10,39 +10,59 @@
     tools:context=".HomeActivity">
 
 
-    <RelativeLayout
-        android:id="@+id/rLayout"
+    <LinearLayout
+        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingLeft="16dp"
-        android:paddingRight="16dp">
+        android:id="@+id/vlayout"
+
+        android:showDividers="middle">
 
         <TextView
-            android:id="@+id/lblTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_centerHorizontal="true"
-            android:layout_marginTop="43dp"
+            android:layout_marginLeft = "10dp"
+            android:layout_marginRight = "10dp"
+            android:layout_marginTop = "30dp"
+            android:layout_marginBottom = "30dp"
+            android:textAppearance="?android:attr/textAppearanceLarge"
             android:text="Tap N Book"
-            android:textAppearance="?android:attr/textAppearanceLarge" />
+            android:id="@+id/lblTitle"
+            android:layout_gravity="center_horizontal" />
 
-        <Button
-            android:id="@+id/btOk"
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentLeft="true"
-            android:layout_below="@+id/lblTitle"
-            android:layout_toLeftOf="@+id/btCancel"
-            android:text="Ok" />
+            android:layout_marginLeft = "10dp"
+            android:layout_marginRight = "10dp"
+            android:layout_marginTop = "30dp"
+            android:layout_marginBottom = "30dp"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="Meeting Room 4-1"
+            android:id="@+id/lblResource"
+            android:layout_gravity="center_horizontal" />
 
-        <Button
-            android:id="@+id/btCancel"
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:layout_below="@+id/lblTitle"
-            android:text="Cancel" />
+            android:layout_marginLeft = "10dp"
+            android:layout_marginRight = "10dp"
+            android:layout_marginTop = "30dp"
+            android:layout_marginBottom = "30dp"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="10.00 AM To 11.00 AM"
+            android:id="@+id/lblTime"
+            android:layout_gravity="center_horizontal" />
 
-    </RelativeLayout>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft = "10dp"
+            android:layout_marginRight = "10dp"
+            android:layout_marginTop = "30dp"
+            android:layout_marginBottom = "30dp"
+            android:text="Book"
+            android:id="@+id/btBook"
+            android:layout_gravity="center_horizontal" />
+    </LinearLayout>
 </RelativeLayout>
