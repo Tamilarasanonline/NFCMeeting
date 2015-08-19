@@ -11,37 +11,25 @@ import com.google.api.client.util.ExponentialBackOff;
 
 
 import com.google.api.services.calendar.CalendarScopes;
-import com.google.api.services.calendar.model.Event;
-import com.google.api.services.calendar.model.Events;
 
-import android.accounts.AccountManager;
-import android.app.Activity;
+import android.accounts.Account;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Typeface;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.Bundle;
 import android.text.TextUtils;
-import android.text.method.ScrollingMovementMethod;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
-import com.google.api.client.util.DateTime;
-import java.io.IOException;
+
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.List;
 
 /**
  * Created by Tamil on 18/8/2015.
  */
 public class GoogleService {
-    public  HomeActivity activity;
+    public HomeActivity activity;
     public com.google.api.services.calendar.Calendar mService;
     private GoogleAccountCredential credential;
     private final HttpTransport transport = AndroidHttp.newCompatibleTransport();
@@ -65,74 +53,60 @@ public class GoogleService {
                 transport, jsonFactory, credential)
                 .setApplicationName("Google Calendar API Android Quickstart")
                 .build();
-        if(credential.getAllAccounts().length >0 && credential.getSelectedAccount()== null){
+        if (credential.getAllAccounts().length > 0 && credential.getSelectedAccount() == null) {
             credential.setSelectedAccountName(PREF_ACCOUNT_NAME);
         }
     }
 
-    public void onResume() {
-        if (isGooglePlayServicesAvailable()) {
-            refreshResults();
-        } else {
-            Toast.makeText(activity,"Google Play Services required:" , Toast.LENGTH_LONG).show();
-         }
+    public String getLoggedInUser(){
+        if(credential != null && credential.getSelectedAccount() != null){
+            Account ac = credential.getSelectedAccount();
+            return ac.name+":" + ac.type + ":"+ac.toString();
+        }
+        return "";
     }
 
-
-
-    public void IsRoomAvailable(){
-        Toast.makeText(activity, "IsRoomAvailable>>", Toast.LENGTH_SHORT).show();
-        if (isGooglePlayServicesAvailable()) {
-            if (credential.getSelectedAccountName() == null) {
-                chooseAccount();
-            } else {
-                if (isDeviceOnline()) {
-                    new EventAvailabilityTask(this).execute();
-                } else {
-                    Toast.makeText(activity,"No network connection available." , Toast.LENGTH_LONG).show();
-                }
-            }
-        } else {
-            Toast.makeText(activity,"Google Play Services required:" , Toast.LENGTH_LONG).show();
+    public void IsRoomAvailable(String calendarId) {
+        if (checkGoogleService()) {
+            new EventAvailabilityTask(this, calendarId).execute();
         }
     }
 
-    private void refreshResults() {
-        if (credential.getSelectedAccountName() == null) {
-            chooseAccount();
-        } else {
-            if (isDeviceOnline()) {
-                new ApiAsyncTask(this).execute();
-            } else {
-                Toast.makeText(activity,"No network connection available." , Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
-    public void clearResultsText() {
+    public void updateEventAvailabilityStatus(final List<String> events) {
         activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(activity, "Retrieving data", Toast.LENGTH_LONG).show();
-            }
-        });
-    }
-
-    public void updateResultsText(final List<String> dataStrings) {
-        activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (dataStrings == null) {
-                    Toast.makeText(activity, "Error retrieving data!", Toast.LENGTH_LONG).show();
-                } else if (dataStrings.size() == 0) {
-                    Toast.makeText(activity, "No data found.", Toast.LENGTH_LONG).show();
+                if (events == null) {
+                    Toast.makeText(activity, "Error retrieving events!", Toast.LENGTH_LONG).show();
+                } else if (events.size() == 0) {
+                    Toast.makeText(activity, "No event found.", Toast.LENGTH_LONG).show();
+                    activity.updateEventAvailabilityValue(true);
                 } else {
-                    Toast.makeText(activity, ""+TextUtils.join("\n\n", dataStrings), Toast.LENGTH_LONG).show();
+                    Toast.makeText(activity, "Events>>" + TextUtils.join("\n\n", events), Toast.LENGTH_LONG).show();
+                    activity.updateEventAvailabilityValue(false);
                 }
             }
         });
     }
 
+    public void bookMeetingRoom(Resources room) {
+        if (checkGoogleService()) {
+            new CreateEventTask(this, room).execute();
+        }
+    }
+
+    public void updateEventCreationStatus(final String event) {
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (event == null) {
+                    Toast.makeText(activity, "Error retrieving events!", Toast.LENGTH_LONG).show();
+                } else {
+                    activity.updateEventCreationValue(event);
+                }
+            }
+        });
+    }
     public void updateStatus(final String message) {
         activity.runOnUiThread(new Runnable() {
             @Override
@@ -141,6 +115,38 @@ public class GoogleService {
             }
         });
     }
+
+    public void showGooglePlayServicesAvailabilityErrorDialog(
+            final int connectionStatusCode) {
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Dialog dialog = GooglePlayServicesUtil.getErrorDialog(
+                        connectionStatusCode,
+                        activity,
+                        REQUEST_GOOGLE_PLAY_SERVICES);
+                dialog.show();
+            }
+        });
+    }
+
+    private boolean checkGoogleService() {
+        if (isGooglePlayServicesAvailable()) {
+            if (credential.getSelectedAccountName() == null) {
+                chooseAccount();
+            } else {
+                if (isDeviceOnline()) {
+                    return true;
+                } else {
+                    Toast.makeText(activity, "No network connection available.", Toast.LENGTH_LONG).show();
+                }
+            }
+        } else {
+            Toast.makeText(activity, "Google Play Services required:", Toast.LENGTH_LONG).show();
+        }
+        return false;
+    }
+
 
     private void chooseAccount() {
         Intent i = credential.newChooseAccountIntent();
@@ -163,25 +169,12 @@ public class GoogleService {
         if (GooglePlayServicesUtil.isUserRecoverableError(connectionStatusCode)) {
             showGooglePlayServicesAvailabilityErrorDialog(connectionStatusCode);
             return false;
-        } else if (connectionStatusCode != ConnectionResult.SUCCESS ) {
+        } else if (connectionStatusCode != ConnectionResult.SUCCESS) {
             return false;
         }
         return true;
     }
 
-    void showGooglePlayServicesAvailabilityErrorDialog(
-            final int connectionStatusCode) {
-        activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Dialog dialog = GooglePlayServicesUtil.getErrorDialog(
-                        connectionStatusCode,
-                        activity,
-                        REQUEST_GOOGLE_PLAY_SERVICES);
-                dialog.show();
-            }
-        });
-    }
 
 }
 

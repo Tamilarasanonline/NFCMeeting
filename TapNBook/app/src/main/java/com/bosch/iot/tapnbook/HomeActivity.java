@@ -38,7 +38,6 @@ public class HomeActivity extends Activity {
         super.onCreate(savedInstanceState);
         service = new GoogleService(this);
         setContentView(R.layout.activity_home);
-        Toast.makeText(this, "" + HomeActivity.class.getResourceAsStream(""), Toast.LENGTH_LONG).show();
         initializeWidgets();
     }
 
@@ -105,7 +104,9 @@ public class HomeActivity extends Activity {
 
     private void buttonOkClick(View v) {
         if (room != null) {
-            Toast.makeText(this, "" + room.toString(), Toast.LENGTH_LONG).show();
+            service.bookMeetingRoom(room);
+            btOk.setEnabled(false);
+            btOk.setText("...");
         } else {
             Toast.makeText(this, "No Meeting Room Selected yet :(", Toast.LENGTH_LONG).show();
         }
@@ -116,7 +117,6 @@ public class HomeActivity extends Activity {
             NdefRecord[] records = msgs[0].getRecords();
             if (records.length == 1) {
                 room = getResourceName(new String(records[0].getPayload(), Charset.forName("UTF-8")));
-//                Toast.makeText(this, "" + room.toString(), Toast.LENGTH_LONG).show();
             }
         }
         prepareValues();
@@ -125,10 +125,7 @@ public class HomeActivity extends Activity {
     private void prepareValues() {
         if (room != null) {
             prepareCurrentDateTime();
-            if (from != null && to != null) {
-                Toast.makeText(this, "Dates Not Null" , Toast.LENGTH_SHORT).show();
-                service.IsRoomAvailable();
-            }
+            service.IsRoomAvailable(room.getCalenderId());
         } else {
             roomName.setText("Invalid NFC Tag  :(");
             bookingTime.setText("(((((O)))))");
@@ -137,29 +134,35 @@ public class HomeActivity extends Activity {
         }
     }
 
-    public void updateBookingValue(boolean flag) {
+    public void updateEventAvailabilityValue(boolean flag) {
         if (flag) {
-            roomName.setText(room.toString());
+            roomName.setText(room.getRoomName());
             bookingTime.setText(getCurrentTimeText());
             btOk.setEnabled(true);
             btOk.setBackgroundColor(Color.GREEN);
         } else {
-            roomName.setText(room.toString() + " Not Available");
+            roomName.setText(room.getRoomName() + " Not Available");
             bookingTime.setText(getCurrentTimeText());
             btOk.setBackgroundColor(Color.RED);
             btOk.setEnabled(false);
         }
     }
 
-    public void printErrorMessage(String  msg){
-        roomName.setText(msg);
+    public void updateEventCreationValue(String link) {
+        if (link != null) {
+            btOk.setText("Booked :)");
+            btOk.setEnabled(false);
+            Toast.makeText(this, "Calender Booked Successfully" +link , Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(this, "Calender Booking failed :("  , Toast.LENGTH_LONG).show();
+        }
     }
 
-    private void prepareCurrentDateTime(){
+
+    private void prepareCurrentDateTime() {
         to = Calendar.getInstance();
         from = Calendar.getInstance();
         to.add(Calendar.HOUR, 1);
-        Toast.makeText(this, "" + from + to, Toast.LENGTH_SHORT).show();
     }
 
     private String getCurrentTimeText() {
@@ -171,7 +174,7 @@ public class HomeActivity extends Activity {
         if (payload.trim().startsWith("en")) {
             String strRoom = payload.replaceFirst("en", "");
             for (Resources room : Resources.values()) {
-                if (room.toString().trim().equalsIgnoreCase(strRoom.trim())) {
+                if (room.getRoomName().trim().equalsIgnoreCase(strRoom.trim())) {
                     return room;
                 }
             }

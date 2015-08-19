@@ -1,9 +1,6 @@
 package com.bosch.iot.tapnbook;
 
-import android.graphics.Color;
 import android.os.AsyncTask;
-import android.widget.Button;
-import android.widget.TextView;
 
 import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException;
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
@@ -13,29 +10,24 @@ import com.google.api.services.calendar.model.Events;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
-import java.util.TimeZone;
 
 /**
  * Created by Tamil on 18/8/2015.
  */
 public class EventAvailabilityTask extends AsyncTask<Void, Void, Void> {
     private GoogleService service;
+    private String calendarId;
 
-    EventAvailabilityTask(GoogleService ser) {
+    EventAvailabilityTask(GoogleService ser,String calendarId) {
         this.service = ser;
+        this.calendarId=calendarId;
     }
 
     @Override
     protected Void doInBackground(Void... params) {
         try {
-            List<Event> events = getAvailableEvents();
-            if (events != null && events.size() == 0) {
-                service.activity.updateBookingValue(true);
-            } else {
-                service.activity.updateBookingValue(false);
-            }
+            service.updateEventAvailabilityStatus(getCalenderEvents());
         } catch (final GooglePlayServicesAvailabilityIOException availabilityException) {
             service.showGooglePlayServicesAvailabilityErrorDialog(
                     availabilityException.getConnectionStatusCode());
@@ -45,28 +37,35 @@ public class EventAvailabilityTask extends AsyncTask<Void, Void, Void> {
                     userRecoverableException.getIntent(), service.REQUEST_AUTHORIZATION);
 
         } catch (Exception e) {
-            service.activity.printErrorMessage(e.getMessage());
             service.updateStatus("The following error occurred:\n" +
                     e.getMessage());
         }
         return null;
     }
 
-    private List<Event> getAvailableEvents() throws IOException {
-        long currentTimeMillis = System.currentTimeMillis();
-        long after = currentTimeMillis + 3600000;
-        TimeZone zone =TimeZone.getDefault();
-        DateTime from = new DateTime(currentTimeMillis);
-        DateTime to = new DateTime(after);
-        Events events = service.mService.events().list("iotcaptain@gmail.com")
+    private List<String> getCalenderEvents() throws IOException {
+        DateTime now = new DateTime(System.currentTimeMillis());
+        DateTime afterOneHour = new DateTime(System.currentTimeMillis()+3600000);
+        List<String> eventStrings = new ArrayList<String>();
+        Events events = service.mService.events().list(this.calendarId)
                 .setMaxResults(2)
-                .setTimeMin(from)
-                .setTimeMax(to)
+                .setTimeMin(now)
+                .setTimeMax(afterOneHour)
                 .setOrderBy("startTime")
                 .setSingleEvents(true)
-                .setTimeZone(zone.toString())
                 .execute();
-        return events.getItems();
+        List<Event> items = events.getItems();
+
+        for (Event event : items) {
+            DateTime start = event.getStart().getDateTime();
+            if (start == null) {
+                start = event.getStart().getDate();
+            }
+            eventStrings.add(
+                    String.format("%s (%s)", event.getSummary(), start));
+        }
+        return eventStrings;
     }
+
 
 }
