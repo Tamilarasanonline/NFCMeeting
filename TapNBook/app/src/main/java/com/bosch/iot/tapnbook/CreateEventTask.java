@@ -21,10 +21,12 @@ import java.util.List;
 public class CreateEventTask extends AsyncTask<Void, Void, Void> {
     private GoogleService service;
     private Resources room;
+    private long startTime;
 
-    CreateEventTask(GoogleService ser, Resources r) {
+    CreateEventTask(GoogleService ser, Resources r, long startTime) {
         this.service = ser;
         this.room = r;
+        this.startTime = startTime;
     }
 
     @Override
@@ -50,13 +52,13 @@ public class CreateEventTask extends AsyncTask<Void, Void, Void> {
                 .setLocation(room.getLocation())
                 .setDescription("TapNBook Event booked by " + service.getLoggedInUser());
 
-        DateTime startDateTime = new DateTime(System.currentTimeMillis());
+        DateTime startDateTime = new DateTime(startTime);
         EventDateTime start = new EventDateTime()
                 .setDateTime(startDateTime)
                 .setTimeZone(room.getTimeZone());
         event.setStart(start);
 
-        DateTime endDateTime = new DateTime(System.currentTimeMillis()+3600000);
+        DateTime endDateTime = new DateTime(startTime+3600000);
         EventDateTime end = new EventDateTime()
                 .setDateTime(endDateTime)
                 .setTimeZone(room.getTimeZone());

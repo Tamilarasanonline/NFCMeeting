@@ -54,6 +54,26 @@
             android:id="@+id/lblTime"
             android:layout_gravity="center_horizontal" />
 
+        <RadioGroup
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Same Room"
+                android:id="@+id/rdSameRoom"
+                android:layout_gravity="center_horizontal"
+                android:checked="false" />
+
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Same Time"
+                android:id="@+id/rdSameTime"
+                android:checked="false" />
+        </RadioGroup>
+
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

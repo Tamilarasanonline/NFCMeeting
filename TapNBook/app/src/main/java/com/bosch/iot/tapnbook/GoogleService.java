@@ -7,6 +7,7 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccoun
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.client.util.DateTime;
 import com.google.api.client.util.ExponentialBackOff;
 
 
@@ -23,6 +24,7 @@ import android.text.TextUtils;
 import android.widget.Toast;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -31,14 +33,15 @@ import java.util.List;
 public class GoogleService {
     public HomeActivity activity;
     public com.google.api.services.calendar.Calendar mService;
-    private GoogleAccountCredential credential;
+    public  GoogleAccountCredential credential;
     private final HttpTransport transport = AndroidHttp.newCompatibleTransport();
     private final JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
     public static final int REQUEST_ACCOUNT_PICKER = 1000;
     public static final int REQUEST_AUTHORIZATION = 1001;
     private static final int REQUEST_GOOGLE_PLAY_SERVICES = 1002;
-    private static final String PREF_ACCOUNT_NAME = "tamilarasanonline@gmail.com";
+//    public static final String PREF_ACCOUNT_NAME = "tamilarasanonline@gmail.com";
     private static final String[] SCOPES = {CalendarScopes.CALENDAR};
+    public static final String PREF_ACCOUNT_NAME = "dummy";
 
 
     public GoogleService(HomeActivity act) {
@@ -72,7 +75,7 @@ public class GoogleService {
         }
     }
 
-    public void updateEventAvailabilityStatus(final List<String> events) {
+    public void updateEventAvailabilityStatus(final String calendarId,final List<String> events) {
         activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -82,16 +85,48 @@ public class GoogleService {
                     Toast.makeText(activity, "No event found.", Toast.LENGTH_LONG).show();
                     activity.updateEventAvailabilityValue(true);
                 } else {
-                    Toast.makeText(activity, "Events>>" + TextUtils.join("\n\n", events), Toast.LENGTH_LONG).show();
                     activity.updateEventAvailabilityValue(false);
+                    callAlternative(calendarId);
                 }
             }
         });
     }
 
-    public void bookMeetingRoom(Resources room) {
+    private void callAlternative(final String calendarId){
+        new PossibleResourceSameTimeTask(this,calendarId).execute();
+        new PossibleTimeSameResourceTask(this,calendarId).execute();
+    }
+
+    public void updatePossibleResourceSameTimeStatus(final Resources r){
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (r == null) {
+                    Toast.makeText(activity, "Error retrieving events!", Toast.LENGTH_LONG).show();
+                } else {
+                    activity.updatePossibleResourceSameTime(r);
+                }
+            }
+        });
+    }
+
+    public void updatePossibleTimeSameResourceStatus(final DateTime d){
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (d == null) {
+                    Toast.makeText(activity, "Error retrieving events!", Toast.LENGTH_LONG).show();
+                } else {
+                    activity.updatePossibleTimeSameResource(d.getValue());
+                }
+            }
+        });
+    }
+
+    public void bookMeetingRoom(Resources room, long startTime) {
+        Toast.makeText(activity, room.getRoomName() + ""+ activity.dateFormatter.format(new Date(startTime)), Toast.LENGTH_LONG).show();
         if (checkGoogleService()) {
-            new CreateEventTask(this, room).execute();
+            new CreateEventTask(this, room, startTime).execute();
         }
     }
 
@@ -148,7 +183,7 @@ public class GoogleService {
     }
 
 
-    private void chooseAccount() {
+    public void chooseAccount() {
         Intent i = credential.newChooseAccountIntent();
         Toast.makeText(activity, i.getDataString(), Toast.LENGTH_LONG).show();
 
@@ -163,7 +198,7 @@ public class GoogleService {
         return (networkInfo != null && networkInfo.isConnected());
     }
 
-    private boolean isGooglePlayServicesAvailable() {
+    public boolean isGooglePlayServicesAvailable() {
         final int connectionStatusCode =
                 GooglePlayServicesUtil.isGooglePlayServicesAvailable(this.activity);
         if (GooglePlayServicesUtil.isUserRecoverableError(connectionStatusCode)) {

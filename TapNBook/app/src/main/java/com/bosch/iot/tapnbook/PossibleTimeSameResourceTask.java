@@ -11,15 +11,16 @@ import com.google.api.services.calendar.model.Events;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by Tamil on 18/8/2015.
  */
-public class EventAvailabilityTask extends AsyncTask<Void, Void, Void> {
+public class PossibleTimeSameResourceTask extends AsyncTask<Void, Void, Void> {
     private GoogleService service;
     private String calendarId;
 
-    EventAvailabilityTask(GoogleService ser,String calendarId) {
+    PossibleTimeSameResourceTask(GoogleService ser, String calendarId) {
         this.service = ser;
         this.calendarId=calendarId;
     }
@@ -27,7 +28,7 @@ public class EventAvailabilityTask extends AsyncTask<Void, Void, Void> {
     @Override
     protected Void doInBackground(Void... params) {
         try {
-            service.updateEventAvailabilityStatus(this.calendarId,getCalenderEvents());
+            service.updatePossibleTimeSameResourceStatus(getNextAvailableTime());
         } catch (final GooglePlayServicesAvailabilityIOException availabilityException) {
             service.showGooglePlayServicesAvailabilityErrorDialog(
                     availabilityException.getConnectionStatusCode());
@@ -43,28 +44,36 @@ public class EventAvailabilityTask extends AsyncTask<Void, Void, Void> {
         return null;
     }
 
-    private List<String> getCalenderEvents() throws IOException {
+    private DateTime getNextAvailableTime() throws IOException {
         DateTime now = new DateTime(System.currentTimeMillis());
-        DateTime afterOneHour = new DateTime(System.currentTimeMillis()+3600000);
-        List<String> eventStrings = new ArrayList<String>();
         Events events = service.mService.events().list(this.calendarId)
-                .setMaxResults(2)
                 .setTimeMin(now)
-                .setTimeMax(afterOneHour)
                 .setOrderBy("startTime")
                 .setSingleEvents(true)
                 .execute();
         List<Event> items = events.getItems();
-
+        long preEnd = -1;
         for (Event event : items) {
             DateTime start = event.getStart().getDateTime();
+            DateTime end = event.getEnd().getDateTime();
             if (start == null) {
                 start = event.getStart().getDate();
             }
-            eventStrings.add(
-                    String.format("%s (%s)", event.getSummary(), start));
+            if (end == null) {
+                end = event.getEnd().getDate();
+            }
+
+            if(preEnd < 0){
+                preEnd= end.getValue();
+            }else{
+                if ((start.getValue() - preEnd) >= 3600000){
+                    return new DateTime(preEnd);
+                }else{
+                    preEnd = end.getValue();
+                }
+            }
         }
-        return eventStrings;
+        return  new DateTime(preEnd);
     }
 
 

@@ -15,19 +15,19 @@ import java.util.List;
 /**
  * Created by Tamil on 18/8/2015.
  */
-public class EventAvailabilityTask extends AsyncTask<Void, Void, Void> {
+public class PossibleResourceSameTimeTask extends AsyncTask<Void, Void, Void> {
     private GoogleService service;
     private String calendarId;
 
-    EventAvailabilityTask(GoogleService ser,String calendarId) {
+    PossibleResourceSameTimeTask(GoogleService ser, String calendarId) {
         this.service = ser;
-        this.calendarId=calendarId;
+        this.calendarId = calendarId;
     }
 
     @Override
     protected Void doInBackground(Void... params) {
         try {
-            service.updateEventAvailabilityStatus(this.calendarId,getCalenderEvents());
+            service.updatePossibleResourceSameTimeStatus(getAvailableResource());
         } catch (final GooglePlayServicesAvailabilityIOException availabilityException) {
             service.showGooglePlayServicesAvailabilityErrorDialog(
                     availabilityException.getConnectionStatusCode());
@@ -43,28 +43,33 @@ public class EventAvailabilityTask extends AsyncTask<Void, Void, Void> {
         return null;
     }
 
-    private List<String> getCalenderEvents() throws IOException {
+    private Resources getAvailableResource() throws IOException {
         DateTime now = new DateTime(System.currentTimeMillis());
-        DateTime afterOneHour = new DateTime(System.currentTimeMillis()+3600000);
-        List<String> eventStrings = new ArrayList<String>();
-        Events events = service.mService.events().list(this.calendarId)
-                .setMaxResults(2)
-                .setTimeMin(now)
-                .setTimeMax(afterOneHour)
-                .setOrderBy("startTime")
-                .setSingleEvents(true)
-                .execute();
-        List<Event> items = events.getItems();
+        DateTime afterOneHour = new DateTime(System.currentTimeMillis() + 3600000);
 
-        for (Event event : items) {
-            DateTime start = event.getStart().getDateTime();
-            if (start == null) {
-                start = event.getStart().getDate();
+        for (Resources r : getOtherResources(this.calendarId)) {
+            Events events = service.mService.events().list(r.getCalenderId())
+                    .setMaxResults(2)
+                    .setTimeMin(now)
+                    .setTimeMax(afterOneHour)
+                    .setOrderBy("startTime")
+                    .setSingleEvents(true)
+                    .execute();
+            if (events.getItems().size() == 0) {
+                return r;
             }
-            eventStrings.add(
-                    String.format("%s (%s)", event.getSummary(), start));
         }
-        return eventStrings;
+        return null;
+    }
+
+    private List<Resources> getOtherResources(String resourceId) {
+        List<Resources> otherResources = new ArrayList<Resources>();
+        for (Resources r : Resources.values()) {
+            if (!r.getCalenderId().equalsIgnoreCase(resourceId)) {
+                otherResources.add(r);
+            }
+        }
+        return otherResources;
     }
 
 
