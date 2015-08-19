@@ -61,7 +61,7 @@ public class GoogleService {
     public String getLoggedInUser(){
         if(credential != null && credential.getSelectedAccount() != null){
             Account ac = credential.getSelectedAccount();
-            return ac.name+":" + ac.type + ":"+ac.toString();
+            return ac.name;
         }
         return "";
     }
