@@ -46,9 +46,9 @@ public class CreateEventTask extends AsyncTask<Void, Void, Void> {
 
     private String createEvent()throws IOException {
         Event event = new Event()
-                .setSummary(" TapNBook Event by "+ service.getLoggedInUser())
+                .setSummary(room.getRoomName() + " Booked  by TapNBook")
                 .setLocation(room.getLocation())
-                .setDescription("TapNBook Event");
+                .setDescription("TapNBook Event booked by " + service.getLoggedInUser());
 
         DateTime startDateTime = new DateTime(System.currentTimeMillis());
         EventDateTime start = new EventDateTime()
@@ -64,7 +64,7 @@ public class CreateEventTask extends AsyncTask<Void, Void, Void> {
         event.setRecurrence(null);
 
         EventAttendee[] attendees = new EventAttendee[] {
-                new EventAttendee().setEmail("iotcaptain@gmail.com")
+                new EventAttendee().setEmail(service.getLoggedInUser())
         };
         event.setAttendees(Arrays.asList(attendees));
         event = service.mService.events().insert(room.getCalenderId(), event).execute();
