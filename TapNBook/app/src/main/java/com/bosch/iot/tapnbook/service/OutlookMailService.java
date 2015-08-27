@@ -24,7 +24,6 @@ public class OutlookMailService implements MailService {
         ExchangeCredentials credentials = new WebCredentials(user.getUserID(), user.getPassword());
         service.setCredentials(credentials);
         service.setUrl(new URI(OUTLOOK_EWS_URL));
-        service.find
         return service;
     }
 
